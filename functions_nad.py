@@ -254,7 +254,7 @@ def get_height_parcel(parcel_points, points, heights):
     return parcel_heights
 
 
-def check_height(entrance_height, building_height, parcel_heights, maximum_allowed_height=80):
+def check_height(entrance_height, building_height, parcel_heights, maximum_allowed_height):
     """
     checks that the height of the building and the highest parcel point respect the allowed height
     """
@@ -400,6 +400,8 @@ def get_parcel(centroid, parcels):
 
 
 def run_overhang_check(ifc_file, guidelines_file, storey_number=None):
+    # get roads guidelines
+    guide_lines = guidelines_file['roads']
     # extract georeference from file
     origin_pt, true_n = get_georeference(ifc_file)
     # Building: IFC
@@ -460,7 +462,7 @@ def run_overhang_check(ifc_file, guidelines_file, storey_number=None):
                                              [corner_00[0], corner_00[1], z_max], [corner_01[0], corner_01[1], z_max],
                                              [corner_02[0], corner_02[1], z_max], [corner_03[0], corner_03[1], z_max])
         sides_roads = side_to_road(adjacent_roads, simplified_box)
-        check = check_overhang(gf, sides_roads, simplified_box.vertical_sides, name_roads, guidelines_file)
+        check = check_overhang(gf, sides_roads, simplified_box.vertical_sides, name_roads, guide_lines)
         rogue_sides = get_geometry_unchecked_sides(simplified_box, sides_roads)
         lst_all_checks.append(check)
         lst_all_rogues.append(rogue_sides)
@@ -468,6 +470,8 @@ def run_overhang_check(ifc_file, guidelines_file, storey_number=None):
 
 
 def run_height_check(ifc_file, guidelines_file):
+    # get roads guidelines
+    guide_lines = guidelines_file['height']
     # extract georeference from file
     origin_pt, true_n = get_georeference(ifc_file)
     # Building: IFC
@@ -499,8 +503,7 @@ def run_height_check(ifc_file, guidelines_file):
     x_max, x_min, y_max, y_min, z_max, z_min = GetCornerMaxMin(obb_last_floor[3], obb_last_floor[4])
     z_max = z_max + origin_pt[2]
     building_height = z_max - entrance_height
-    height_check = check_height(entrance_height, building_height, parcel_heights)
-    # buffer_gf = gf.buffer(20)  # buffer 20 m
+    height_check = check_height(entrance_height, building_height, parcel_heights, guide_lines)
     return height_check
 
 
@@ -532,12 +535,16 @@ def run_boundary_check(ifc_file):
 
 
 guidelines = {
-    'Boompjes': 5,
-    'Hertekade': 10}
+    'roads': {
+        'Boompjes': 5,
+        'Hertekade': 10
+    },
+    'height': 100
+}
 
 # z = run_boundary_check("external_datasets/9252_VRI_Boompjes_constructie_georef.ifc")
 
-# y = run_height_check("external_datasets/9252_VRI_Boompjes_constructie_georef.ifc", guidelines)
+y = run_height_check("external_datasets/9252_VRI_Boompjes_constructie_georef.ifc", guidelines)
 
 x = run_overhang_check("external_datasets/9252_VRI_Boompjes_constructie_georef.ifc", guidelines)
 
