@@ -1,0 +1,49 @@
+#this is the default parameters for the overlap calculation
+#cutting_height= elevation+1.0      which is the  slice cutting height of each floor.  Can be modified such as "cutting_height= elevation+ 5.0" meter
+#s= 0.2                             s is the sample point distance, if s = 0 no points added. s = 0.2 means add points in a edge per 20 cm
+#dbscan=2                           this is the dbscan clustering parameter(eps) https://scikit-learn.org/stable/modules/generated/sklearn.cluster.DBSCAN.html
+#k= 16                              k is the knn concave hull parameter
+#calcconvexhull=False               if calcconvexhull = Ture, the concave hull will not be calculated, instead the convex hull return  
+# use_obb= False,                   if use_obb = Ture,  the concave hull will not be calculated, instead the oriented bounding box
+
+f1: 
+  cutting_height: 1.0
+  k: 3
+  use_obb: True
+f2:
+  k: 60
+f3:
+  k: 32
+f4:
+  k: 64
+f5:
+  k: 32
+f6:
+  k: 50
+f7:
+  k: 18
+f13:
+  k: 50
+f14:
+  k: 64
+f23:
+  k: 64
+  s: 0.5
+  dbscan: 10
+f25:
+  k: 32
+f26:
+  k: 64
+  s: 0.5
+  dbscan: 6
+f29:
+  k: 64
+  s: 0.5
+  dbscan: 6
+f31:
+  k: 64
+  s: 0.5
+  dbscan: 6
+f33:
+  calcconvexhull: True
+  use_obb: True
