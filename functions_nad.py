@@ -26,9 +26,9 @@ def check_boundary(parcel_limit, bldg_limit):
     """
     check = parcel_limit.contains(bldg_limit)
     if check:
-        return "Pass"
+        return "Pass", parcel_limit.wkt, bldg_limit.wkt
     else:
-        return "Fail"
+        return "Fail", parcel_limit.wkt, bldg_limit.wkt
 
 
 def shapefile_to_shapely_roads(shape_file):
@@ -125,25 +125,47 @@ def side_to_road(roads, bbox):
                 # if the normal is too short it might not intersect the road find a better a way ensure direction of
                 # normal
                 line_intersection = normal.intersection(road)
-                points_intersection = list(line_intersection.coords)
-                points_of_normal = list(normal.coords)
-                pt0 = np.array(points_of_normal[0])
-                pt1 = np.array(points_of_normal[1])
-                for point in points_intersection:
-                    pt_intersection = np.array(point)
-                    # make sure it is pointing away from the bounding box
-                    v0 = pt1 - pt0
-                    v1 = pt_intersection - pt0
-                    check_alignment = np.dot(v0, v1)
-                    if check_alignment > 0:
-                        # choose closest point
-                        dist = np.linalg.norm(v1)
-                        if distance_to_road == 0:
-                            normal_to_road[n_id] = road_id
-                            distance_to_road = dist
-                        elif dist < distance_to_road:
-                            normal_to_road[n_id] = road_id
-                            distance_to_road = dist
+                if line_intersection.type == "MultiLineString":
+                    for line in line_intersection:
+                        points_intersection = list(line.coords)
+                        points_of_normal = list(normal.coords)
+                        pt0 = np.array(points_of_normal[0])
+                        pt1 = np.array(points_of_normal[1])
+                        for point in points_intersection:
+                            pt_intersection = np.array(point)
+                            # make sure it is pointing away from the bounding box
+                            v0 = pt1 - pt0
+                            v1 = pt_intersection - pt0
+                            check_alignment = np.dot(v0, v1)
+                            if check_alignment > 0:
+                                # choose closest point
+                                dist = np.linalg.norm(v1)
+                                if distance_to_road == 0:
+                                    normal_to_road[n_id] = road_id
+                                    distance_to_road = dist
+                                elif dist < distance_to_road:
+                                    normal_to_road[n_id] = road_id
+                                    distance_to_road = dist
+                else:
+                    points_intersection = list(line_intersection.coords)
+                    points_of_normal = list(normal.coords)
+                    pt0 = np.array(points_of_normal[0])
+                    pt1 = np.array(points_of_normal[1])
+                    for point in points_intersection:
+                        pt_intersection = np.array(point)
+                        # make sure it is pointing away from the bounding box
+                        v0 = pt1 - pt0
+                        v1 = pt_intersection - pt0
+                        check_alignment = np.dot(v0, v1)
+                        if check_alignment > 0:
+                            # choose closest point
+                            dist = np.linalg.norm(v1)
+                            if distance_to_road == 0:
+                                normal_to_road[n_id] = road_id
+                                distance_to_road = dist
+                            elif dist < distance_to_road:
+                                normal_to_road[n_id] = road_id
+                                distance_to_road = dist
     return normal_to_road
 
 
@@ -160,7 +182,6 @@ def check_overhang(groundfloor, sides_to_road, sides, roads_name, guideline):
         check_dist = 0
         road_name = roads_name[road_id]
         admissible_overhang = guideline[road_name]
-        # points = [outside_line.coords[0], outside_line.coords[-1]]
         if outside_line.wkt == 'LINESTRING EMPTY':
             check[road_name] = ("Pass", "Admissible overhang: " + str(admissible_overhang),
                                 "Overhang: " + "No overhang", side_line_2d.wkt)
@@ -504,7 +525,8 @@ def run_height_check(ifc_file, guidelines_file):
     z_max = z_max + origin_pt[2]
     building_height = z_max - entrance_height
     height_check = check_height(entrance_height, building_height, parcel_heights, guide_lines)
-    return height_check
+    buffer_gf = gf.buffer(20)
+    return height_check, guide_lines, buffer_gf.wkt
 
 
 def run_boundary_check(ifc_file):
@@ -530,7 +552,7 @@ def run_boundary_check(ifc_file):
     centroid_gf = gf.centroid
     parcels = shapefile_to_shapely_parcels("external_datasets/BRK_Rotterdam_Centrum/BRK_SelectieCentrum.shp")
     parcel = get_parcel(centroid_gf, parcels)
-    boundary_check = check_boundary(parcel, gf)
+    boundary_check = check_boundary(parcel, gf)  # test result, parcel polygon wkt, gf polygon wkt
     return boundary_check
 
 
@@ -542,7 +564,7 @@ guidelines = {
     'height': 100
 }
 
-# z = run_boundary_check("external_datasets/9252_VRI_Boompjes_constructie_georef.ifc")
+z = run_boundary_check("external_datasets/9252_VRI_Boompjes_constructie_georef.ifc")
 
 y = run_height_check("external_datasets/9252_VRI_Boompjes_constructie_georef.ifc", guidelines)
 
